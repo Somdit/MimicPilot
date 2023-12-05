@@ -268,15 +268,6 @@ class CarlaEnv(gym.Env):
         if self.lane_invasion_data:
             reward -= 1.0
 
-        # Maintain position near the center of the current lane
-        learning_vehicle_location = learning_vehicle_transform.location
-        current_waypoint = self.world.get_map().get_waypoint(learning_vehicle_location)
-        lane_width = current_waypoint.lane_width
-        current_lane_center = current_waypoint.transform.location
-        current_lane_center.x += lane_width / 2
-        lateral_deviation = abs(learning_vehicle_transform.location.y - current_lane_center.y)
-        reward += 1.0 / (lateral_deviation + 1)
-
         # done once collision occurs
         if self.collision_data or distance > MAX_DIST_ALLOWED or distance < MIN_DIST_ALLOWED:
             done = True
