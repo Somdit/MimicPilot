@@ -16,7 +16,7 @@ Run Script `train_agent.py`
 ---
 ## About Agent:
 
-# Observation Spaces: [semantic segmentation camera sensor data], [relative position, relative velocity, relative speed]
+#### Observation Spaces: [semantic segmentation camera sensor data], [relative position, relative velocity, relative speed]
 
 ![Screenshot 2023-12-04 180751](https://github.com/Somdit/MimicPilot/assets/40221390/f9eb0608-4914-4f8d-9fdf-f288b888dbd0)
 
@@ -27,7 +27,7 @@ Run Script `train_agent.py`
 | Blue         | Vehicle               |
 | Black        | Obstacle              |
 
-# Action Spaces:
+#### Action Spaces:
 | Action   | Space       | Range    |
 |----------|-------------|----------|
 | Throttle | Continuous  | [-1, 1]  |
