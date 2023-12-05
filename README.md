@@ -14,3 +14,16 @@ Run Script `train_agent.py`
 - Evaluate Model: `train_exist_model(model_path, total_timesteps=100000, hyperparams=hyperparams2)`
 
 ---
+About Agent:
+
+Observation Spaces: [semantic segmentation camera sensor data], [relative position, relative velocity, relative speed]
+![Screenshot 2023-12-04 180751](https://github.com/Somdit/MimicPilot/assets/40221390/f9eb0608-4914-4f8d-9fdf-f288b888dbd0)
+
+| Color        | Semantic Segmentation |
+|--------------|-----------------------|
+| Purple       | Route                 |
+| Light Green  | Lane                  |
+| Blue         | Vehicle               |
+| Black        | Obstacle              |
+
+Action Spaces: throttle [-1, 1], steer [-1, 1], brake [0, 1]
