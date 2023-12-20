@@ -22,13 +22,13 @@ Run Script `eval_agent.py`
 ---
 ## Demo:
 
-We also provided a demo video of the pre-trained agent with 400,000 training timesteps
+A demo video of the pre-trained agent with 400,000 training timesteps
 [Demo Video](https://drive.google.com/file/d/1ijbiKa8CEiVy7xC2KwXqHiyEQwAfEcNM/preview)
 
 ---
 ## About Agent:
 
-Implementation details of our gym environment are in `carla_env/carla_env_multi_obs`
+Implementation details of the gym environment are in `carla_env/carla_env_multi_obs`
 
 ### Observation Spaces: 
 [semantic segmentation camera sensor data], [relative position, relative velocity, relative speed]
