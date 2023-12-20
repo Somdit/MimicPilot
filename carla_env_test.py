@@ -3,7 +3,6 @@ import cv2
 import time
 import carla
 from carla_env.carla_env_multi_obs import CarlaEnv
-from utils.clean_actors import clean_actors
 
 # connect to simulator
 client = carla.Client('localhost', 2000)

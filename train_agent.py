@@ -1,15 +1,10 @@
-import gym
 import carla
-import cv2
 import os
 import torch
-import gymnasium as gym
 from torch import nn
 from stable_baselines3 import PPO
-from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from carla_env.carla_env_multi_obs import CarlaEnv
 from utils.clean_actors import clean_actors
@@ -112,20 +107,6 @@ def train_new_model(model_name, total_timesteps=100000, hyperparams={}):
     model.save(ppo_path)
 
 
-def eval_model(model_path):
-    # evaluate the model
-    env = lambda: CarlaEnv()
-    env = DummyVecEnv([env])
-
-    model = PPO.load(model_path, env=env, verbose=1)
-
-    obs = env.reset()
-    while True:
-        action, _states = model.predict(obs)
-        obs, rewards, dones, info = env.step(action)
-        env.render(mode='human')
-
-
 if __name__ == '__main__':
     # connect to simulator
     client = carla.Client('localhost', 2000)
@@ -153,9 +134,9 @@ if __name__ == '__main__':
     }
 
     model_path = os.path.join('./Training/Saved_Models/PPO_highway_lane_tracking/best_model')
-    # train_new_model("PPO_highway_lane_tracking", total_timesteps=200000, hyperparams=hyperparams2)
+    
+    train_new_model("PPO_agent", total_timesteps=200000, hyperparams=hyperparams2)
     # train_exist_model(model_path, total_timesteps=100000, hyperparams=hyperparams2)
-    eval_model(model_path)
 
 
 

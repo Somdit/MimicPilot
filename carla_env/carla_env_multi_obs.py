@@ -1,16 +1,13 @@
 import gym
 import carla
-import time
-import math
 import random
 import cv2
 import numpy as np
 from carla import Client
-from carla import VehicleControl
-from carla_env.carla_sync_mode import CarlaSyncMode
 #from leaderboard.autoagents.detour_agents.my_detour_agent import DetourAgent
-from agents.navigation.basic_agent import BasicAgent
-from agents.navigation.behavior_agent import BehaviorAgent
+from agents.basic_agent import BasicAgent
+from agents.behavior_agent import BehaviorAgent
+
 
 class CarlaEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -18,6 +15,10 @@ class CarlaEnv(gym.Env):
     CAMERA_HEIGHT = int(256)  # need to be multiple of 128
     FOV = int(90)
     PRIVILEGE_START_LOC = carla.Location(x=5, y=-200, z=1.0)
+    
+    PRIVILEGE_START_LOCATIONS = [carla.Location(x=5, y=-200.5, z=1.0), 
+                                 carla.Location(x=-139, y=-200.5, z=10.5)]
+    
     PRIVILEGE_SPEED_LIMIT = 1.0  # FIXME: need to adjust agent speed
 
     INIT_DIST_BETWEEN_VEHICLES = 7.0
@@ -73,7 +74,6 @@ class CarlaEnv(gym.Env):
             'telemetry': telemtry_space,
         })
 
-        # FIXME: currently set brake to 0.0 so vehicle does not stop initially
         self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0, 0.0]), high=np.array([1.0, 1.0, 1.0], dtype=np.float32))  # throttle, steer, brake
     
 
@@ -81,12 +81,18 @@ class CarlaEnv(gym.Env):
         # setup privilege agent to start location
         if not self.privilege_vehicle:
             vehicle_bp = self.world.get_blueprint_library().find('vehicle.lincoln.mkz_2020')
-            self.pv_spawn_point = carla.Transform(self.PRIVILEGE_START_LOC, carla.Rotation(yaw=180.0))
+
+            # randomly pick one of the start locations
+            pv_start_location = np.random.choice(self.PRIVILEGE_START_LOCATIONS)
+            self.pv_spawn_point = carla.Transform(pv_start_location, carla.Rotation(yaw=180.0))
+
             # self.pv_spawn_point.location.x -= 10.0
             self.privilege_vehicle = self.world.spawn_actor(vehicle_bp, self.pv_spawn_point)
             self.privilege_vehicle.set_autopilot(True, self.traffic_manager.get_port())
+
             # wrap it with behavior agent
             self.privilege_agent = BehaviorAgent(self.privilege_vehicle, behavior='normal')
+
             # Set the agent destination
             spawn_points = self.world.get_map().get_spawn_points()
             destination = random.choice(spawn_points).location
@@ -96,7 +102,7 @@ class CarlaEnv(gym.Env):
         if not self.learning_vehicle:
             vehicle_bp = self.world.get_blueprint_library().find('vehicle.tesla.cybertruck')  # get specific vehicle
             self.spawn_point = carla.Transform(
-                                carla.Location(self.PRIVILEGE_START_LOC.x + self.INIT_DIST_BETWEEN_VEHICLES, self.PRIVILEGE_START_LOC.y, self.PRIVILEGE_START_LOC.z),
+                                carla.Location(pv_start_location.x + self.INIT_DIST_BETWEEN_VEHICLES, pv_start_location.y, pv_start_location.z),
                                 carla.Rotation(yaw=180.0))
             self.learning_vehicle = self.world.spawn_actor(vehicle_bp, self.spawn_point)
         
@@ -217,19 +223,16 @@ class CarlaEnv(gym.Env):
         self.privilege_vehicle.apply_control(control)
 
         # step learning agent
-        throttle, steer, brake = action  # action with two items
+        throttle, steer, brake = action  # action with three items
         control = carla.VehicleControl(throttle=float(throttle), steer=float(steer), brake=float(brake))
         self.learning_vehicle.apply_control(control)
-
 
         self.world.tick()
 
         done = False
         reward = 0.0
 
-        ## define rewards
-        
-
+        ## define rewards and penalties
         # calculate distance between privilege and learning vehicles
         privilege_vehicle_transform = self.privilege_vehicle.get_transform()
         learning_vehicle_transform = self.learning_vehicle.get_transform()
@@ -268,7 +271,16 @@ class CarlaEnv(gym.Env):
         if self.lane_invasion_data:
             reward -= 1.0
 
-        # done once collision occurs
+        # Maintain position near the center of the current lane
+        learning_vehicle_location = learning_vehicle_transform.location
+        current_waypoint = self.world.get_map().get_waypoint(learning_vehicle_location)
+        lane_width = current_waypoint.lane_width
+        current_lane_center = current_waypoint.transform.location
+        current_lane_center.x += lane_width / 2
+        lateral_deviation = abs(learning_vehicle_transform.location.y - current_lane_center.y)
+        reward += 1.0 / (lateral_deviation + 1)
+
+        # done once [collision occurs] or [distance is too far or too close]
         if self.collision_data or distance > MAX_DIST_ALLOWED or distance < MIN_DIST_ALLOWED:
             done = True
             reward = -200.0
@@ -324,3 +336,4 @@ class CarlaEnv(gym.Env):
             # print(f"Destroying obstacle: {obstacle.id}")
             obstacle.destroy()
         
+
